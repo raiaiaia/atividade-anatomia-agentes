@@ -9,7 +9,10 @@ from typing import Any, Dict, List, Tuple
 
 load_dotenv()
 
-openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+openai_client = OpenAI(
+    api_key=os.environ["GROQ_API_KEY"],
+    base_url="https://api.groq.com/openai/v1",
+)
 
 SYSTEM_PROMPT = """
 You are a coding assistant whose goal it is to help us solve coding tasks.
@@ -145,9 +148,9 @@ def extract_tool_invocations(text: str) -> List[Tuple[str, Dict[str, Any]]]:
 
 def execute_llm_call(conversation: List[Dict[str, str]]):
     response = openai_client.chat.completions.create(
-        model="gpt-5",
+        model="openai/gpt-oss-120b",
         messages=conversation,
-        max_completion_tokens=2000
+        max_tokens=8000
     )
     return response.choices[0].message.content
 
@@ -168,6 +171,9 @@ def run_coding_agent_loop():
         })
         while True:
             assistant_response = execute_llm_call(conversation)
+
+            print(f"Thought: {assistant_response}")
+
             tool_invocations = extract_tool_invocations(assistant_response)
             if not tool_invocations:
                 print(f"{ASSISTANT_COLOR}Assistant:{RESET_COLOR}: {assistant_response}")
@@ -179,7 +185,7 @@ def run_coding_agent_loop():
             for name, args in tool_invocations:
                 tool = TOOL_REGISTRY[name]
                 resp = ""
-                print(name, args)
+                print(f"Executing tool (Action): {name}, args: {args}")
                 if name == "read_file":
                     resp = tool(args.get("filename", "."))
                 elif name == "list_files":
@@ -188,6 +194,9 @@ def run_coding_agent_loop():
                     resp = tool(args.get("path", "."),
                                 args.get("old_str", ""),
                                 args.get("new_str", ""))
+                
+                print(f"Observation:tool_result({json.dumps(resp)})")
+                
                 conversation.append({
                     "role": "user",
                     "content": f"tool_result({json.dumps(resp)})"
