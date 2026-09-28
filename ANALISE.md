@@ -1,4 +1,4 @@
-## ANALIS.md
+## ANALISE.md
 
 Não consegui rodar o agente. Em todas as tentativas, a chamada
 à API falhou porque o modelo usado não respondia no formato requerido. O trace do erro:
